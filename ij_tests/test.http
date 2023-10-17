@@ -1,0 +1,162 @@
+###
+# @name createRecord
+POST {{server}}/records
+Content-Type: application/json
+
+{
+  "IntValue": 42,
+  "StrValue": "foo",
+  "BoolValue": true,
+  "TimeValue": "2023-10-10T21:57:00+02:00"
+}
+
+> {%
+    client.test("Record Creation", () => {
+        client.assert(response.status === 201, "Expected: 201 Created");
+        client.assert(response.body.ID !== undefined, "ID is undefined");
+        client.global.set("record_id", response.body.ID);
+    });
+%}
+
+###
+# @name getRecord
+GET {{server}}/records/{{record_id}}
+
+> {%
+    client.test("Retrieve Record", () => {
+        client.assert(response.status === 200, "Expected: 200 OK");
+        client.assert(response.body.IntValue === 42, "Incorrect IntValue");
+        client.assert(response.body.StrValue.trim() === "foo", "Incorrect StrValue");
+        client.assert(response.body.BoolValue === true, "Incorrect BoolValue");
+        client.assert(response.body.TimeValue.startsWith("2023-10-10T"), "Incorrect TimeValue");
+    });
+%}
+
+###
+# @name updateRecord
+PUT {{server}}/records/{{record_id}}
+Content-Type: application/json
+
+{
+  "IntValue": 43,
+  "StrValue": "bar",
+  "BoolValue": false,
+  "TimeValue": "2023-11-10T21:57:00+02:00"
+}
+
+> {%
+    client.test("Update Record", () => {
+        client.assert(response.status === 200, "Expected: 200 OK");
+    });
+%}
+
+###
+# @name verifyUpdate
+GET {{server}}/records/{{record_id}}
+
+> {%
+    client.test("Verify Updated Record", () => {
+        client.assert(response.status === 200, "Expected: 200 OK");
+        client.assert(response.body.IntValue === 43, "Update failed: Incorrect IntValue");
+        client.assert(response.body.StrValue.trim() === "bar", "Update failed: Incorrect StrValue");
+        client.assert(response.body.BoolValue === false, "Update failed: Incorrect BoolValue");
+        client.assert(response.body.TimeValue.startsWith("2023-11-10T"), "Update failed: Incorrect TimeValue");
+    });
+%}
+
+###
+# @name deleteRecord
+DELETE {{server}}/records/{{record_id}}
+
+> {%
+    client.test("Delete Record", () => {
+        client.assert(response.status === 204, "Expected: 204 No Content");
+    });
+%}
+
+###
+# @name verifyDeletion
+GET {{server}}/records/{{record_id}}
+
+> {%
+    client.test("Verify Deletion", () => {
+        client.assert(response.status === 404, "Expected: 404 Not Found");
+    });
+%}
+
+###
+# @name createInvalidRecord
+POST {{server}}/records
+Content-Type: application/json
+
+{
+  "IntValue": "invalid",
+  "StrValue": "",
+  "BoolValue": "invalid",
+  "TimeValue": "invalid-date"
+}
+
+> {%
+    client.test("Invalid Record Creation", () => {
+        client.assert(response.status === 400, "Expected: 400 Bad Request");
+        // TODO
+        // client.assert(response.body.error !== undefined, "Error message is undefined");
+    });
+%}
+
+###
+# @name getNonExistentRecord
+GET {{server}}/records/9999
+
+> {%
+    client.test("Retrieve Non-Existent Record", () => {
+        client.assert(response.status === 404, "Expected: 404 Not Found");
+    });
+%}
+
+###
+# @name updateNonExistentRecord
+PUT {{server}}/records/9999
+Content-Type: application/json
+
+{
+  "IntValue": 42,
+  "StrValue": "foo",
+  "BoolValue": true,
+  "TimeValue": "2023-10-10T21:57:00+02:00"
+}
+
+> {%
+    client.test("Update Non-Existent Record", () => {
+        client.assert(response.status === 404, "Expected: 404 Not Found");
+    });
+%}
+
+###
+# @name deleteNonExistentRecord
+DELETE {{server}}/records/9999
+
+> {%
+    client.test("Delete Non-Existent Record", () => {
+        client.assert(response.status === 404, "Expected: 404 Not Found");
+    });
+%}
+
+###
+# @name updateRecordWithInvalidData
+PUT {{server}}/records/{{record_id}}
+Content-Type: application/json
+
+{
+  "IntValue": "invalid",
+  "StrValue": 42,
+  "BoolValue": "notABoolean",
+  "TimeValue": "notADateTime"
+}
+
+> {%
+    client.test("Update with Invalid Data", () => {
+        client.assert(response.status === 400, "Expected: 400 Bad Request");
+        // client.assert(response.body.error !== undefined, "Error message is undefined");
+    });
+%}

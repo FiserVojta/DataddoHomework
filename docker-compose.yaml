@@ -1,0 +1,32 @@
+version: '3.4'
+
+services:
+  service:
+    build:
+      context: .
+      dockerfile: ./homework/Dockerfile
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/readyz" ]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+      start_period: 3s
+    ports:
+      - "8080:8080"
+
+  ijhttp:
+    image: "jetbrains/intellij-http-client:latest"
+    volumes:
+      - ./ij_tests:/workdir
+    command:
+      - "--env-file"
+      - "http-client.env.json"
+      - "--env"
+      - "docker-compose"
+      # resolve localhost as host machine localhost
+      # useful if you running service locally
+      - "-D"
+      - "test.http"
+    depends_on:
+      service:
+        condition: service_healthy
